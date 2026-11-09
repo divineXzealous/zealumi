@@ -35,13 +35,15 @@ Divine's tags don't trigger Lumi, add his LID too: `PROTECTED_CONTACT_ID=phone,l
 Switch it off/on with `.protect off` / `.protect on` (owner only) or PROTECTED_ENABLED.
 
 ## Adding a command
-Add an object to a file in `src/commands/` with `name`, `category`, `menu`, `run(ctx)`.
+Add an object to one of the command files (`general.js`, `ai.js`, `sticker.js`, `music.js`, `profile.js`) with `name`, `category`, `menu`, `run(ctx)`.
 The menu rebuilds itself from the registry.
 
 ## Folders
 - `server.js` / `config.js` — start-up and settings
-- `src/ai` — providers + fallback · `src/whatsapp` — connection, message handling
-- `src/commands` — all commands · `src/personality.js`, `memory.js`, `divine.js`, `menu.js`
+- All code files sit together in one folder (flat layout, needs Node 20+):
+  `providers.js` + `fallback.js` (AI) · `connection.js`, `messageHandler.js` (WhatsApp)
+  `index.js` + `general.js`, `ai.js`, `sticker.js`, `music.js`, `profile.js` (commands)
+  `personality.js`, `memory.js`, `divine.js`, `menu.js`
 - `data/` — memory and settings (private) · `auth/` — WhatsApp session (private)
 
 ## Test status
