@@ -1,41 +1,38 @@
-// Small store with delayed writes. Saves to a private file (0600), or to the
-// database when DATABASE_URL is set. Call load() once at start-up.
+// Tiny JSON-file store: createStore(name, defaults) -> { data, load, save }
 const fs = require('fs');
 const path = require('path');
-const config = require('../../config');
-const db = require('./db');
-const log = require('./logger');
 
-function createStore(name, initial) {
-  const useDb = db.enabled();
-  const file = path.join(config.dataDir, `${name}.json`);
-  let data = initial;
-  if (!useDb) {
-    fs.mkdirSync(path.dirname(file), { recursive: true });
-    try { data = JSON.parse(fs.readFileSync(file, 'utf8')); } catch (_) { /* first run */ }
-  }
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
 
-  let timer = null;
-  const flush = () => {
-    if (timer) { clearTimeout(timer); timer = null; }
-    if (useDb) {
-      db.set(`store:${name}`, JSON.stringify(data)).catch((e) => log.error(`Could not save ${name}:`, e.message));
-      return;
-    }
-    const tmp = `${file}.tmp`;
-    fs.writeFileSync(tmp, JSON.stringify(data), { mode: 0o600 });
-    fs.renameSync(tmp, file);
+function createStore(name, defaults = {}) {
+  const file = path.join(DATA_DIR, `${name}.json`);
+  const store = {
+    data: JSON.parse(JSON.stringify(defaults)),
+
+    load() {
+      try {
+        fs.mkdirSync(DATA_DIR, { recursive: true });
+        if (fs.existsSync(file)) {
+          store.data = JSON.parse(fs.readFileSync(file, 'utf8'));
+        }
+      } catch (err) {
+        console.error(`[jsonStore] load failed for ${name}:`, err.message);
+      }
+      return store.data;
+    },
+
+    save() {
+      try {
+        fs.mkdirSync(DATA_DIR, { recursive: true });
+        const tmp = `${file}.tmp`;
+        fs.writeFileSync(tmp, JSON.stringify(store.data));
+        fs.renameSync(tmp, file);
+      } catch (err) {
+        console.error(`[jsonStore] save failed for ${name}:`, err.message);
+      }
+    },
   };
-  const save = () => { if (!timer) { timer = setTimeout(flush, 1500); timer.unref && timer.unref(); } };
-  const load = async () => {
-    if (!useDb) return;
-    const v = await db.get(`store:${name}`);
-    if (v) data = JSON.parse(v);
-  };
-
-  process.on('exit', () => { try { if (timer && !useDb) flush(); } catch (_) {} });
-  process.on('SIGTERM', () => { if (timer) flush(); setTimeout(() => process.exit(0), 1500); });
-
-  return { get data() { return data; }, save, flush, load };
+  return store;
 }
+
 module.exports = { createStore };
