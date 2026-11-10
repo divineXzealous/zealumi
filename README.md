@@ -1,54 +1,47 @@
-# Lumi — WhatsApp chatbot
+# Lumi — WhatsApp chatbot (v1.1)
 
-Built with Node.js, Express and Baileys (unofficial WhatsApp Web library).
-AI: Groq (primary) -> DeepSeek -> Gemini, with automatic fallback.
+Node.js + Express + Baileys (unofficial WhatsApp Web library). AI: Groq -> DeepSeek -> Gemini fallback.
+Baileys breaks Meta's terms: use a spare number, never your main one. Messages sent from the
+linked account itself are ignored, so use a SEPARATE number for Lumi.
 
-## Read this first
-- Baileys is NOT the official WhatsApp API. It breaks Meta's terms and the number can be banned.
-  Use a spare number, not your main one.
-- Use a SEPARATE number for Lumi. Messages you send from the linked account itself are ignored.
-- Nothing here has been run against live WhatsApp/Groq/DeepSeek/Gemini yet. See "Test status".
+## Install note (panels that block git)
+Some panels block npm from fetching git packages (error EALLOWGIT). `package.json` has an
+`overrides` entry that swaps Baileys' git dependency for the npm-published copy, so plain
+`npm install` works. Delete any old `node_modules` and `package-lock.json` before starting.
 
-## Setup on iPhone (Replit)
-1. Make a free account in the Replit app/website and create a new Node.js Repl. Keep it PRIVATE
-   (the `auth` folder holds your WhatsApp login).
-2. Upload `lumi-bot.zip` in the Files panel, open Shell, run: `unzip -o lumi-bot.zip`
-   (if files land in a `lumi` subfolder, move them to the Repl root).
-3. Get free API keys: Groq (console.groq.com), DeepSeek (platform.deepseek.com),
-   Gemini (aistudio.google.com). One key is enough to start.
-4. Replit Secrets (padlock icon) — add: GROQ_API_KEY, DEEPSEEK_API_KEY, GEMINI_API_KEY,
-   PAIRING_NUMBER (Lumi's number, digits only with country code, e.g. 2348012345678),
-   OWNER_NUMBER (your number, digits), PROTECTED_CONTACT_ID (Divine's number, digits).
-   Optional names are listed in `.env.example`.
-5. Shell: `npm install` then `npm start`.
-6. The Console prints `PAIRING CODE: XXXX-XXXX`. On the phone with Lumi's number:
-   WhatsApp > Settings > Linked Devices > Link a Device > "Link with phone number instead" > enter the code.
-7. Message Lumi's number. Try `.menu`.
+## Setup (Spaceify / Pterodactyl-style panel)
+1. Files: upload the zip to /home/container and Unarchive (this keeps your `.env`, `auth`, `data`).
+2. Startup tab: JS FILE = `server.js`.
+3. Create `.env` (see `.env.example`). Minimum: GROQ_API_KEY and/or GEMINI_API_KEY, PAIRING_NUMBER,
+   CLAIM_PASSPHRASE.
+4. Console > Start. First start installs packages (a few minutes).
+5. On Lumi's phone: WhatsApp > Linked Devices > Link a Device > Link with phone number, enter
+   the `PAIRING CODE` printed in the console.
 
-## Staying online
-Free Repls sleep. For 24/7, use a Replit deployment that keeps running (e.g. Reserved VM — check
-current options/pricing) and keep the `auth` folder. Autoscale-style hosting is a poor fit.
+## Owner and Divine
+Send `.claim <CLAIM_PASSPHRASE>` to Lumi in a PRIVATE chat. She stores your phone number and your
+hidden WhatsApp id (LID), so tags in groups are recognised. `.unclaim` (owner) clears claims.
+Once she has seen the owner in a group she also learns the hidden id automatically.
 
-## Divine protection and LIDs
-In groups WhatsApp sometimes identifies people by a hidden "LID" instead of a phone number. If
-Divine's tags don't trigger Lumi, add his LID too: `PROTECTED_CONTACT_ID=phone,lid` (same for OWNER_NUMBER).
-Switch it off/on with `.protect off` / `.protect on` (owner only) or PROTECTED_ENABLED.
+## Commands
+General: menu help ping about status owner · AI: chatbot on/off (ai on/off works too), clear, protect on/off (owner)
+Sticker: s take toimg · Media: play · Profile: getpp @user · Group (admins): add <number>, kick @user
+Utility: afk [reason] · Owner: setprefix <symbol|reset>, setprofilepic (reply to an image)
+Hidden: claim, unclaim
 
-## Adding a command
-Add an object to one of the command files (`general.js`, `ai.js`, `sticker.js`, `music.js`, `profile.js`) with `name`, `category`, `menu`, `run(ctx)`.
-The menu rebuilds itself from the registry.
+## Layout
+All code files sit together in one folder (flat layout, Node 20+). `index.js` is the command registry;
+commands live in `general.js ai.js sticker.js music.js profile.js group.js afk.js owner.js`.
 
-## Folders
-- `server.js` / `config.js` — start-up and settings
-- All code files sit together in one folder (flat layout, needs Node 20+):
-  `providers.js` + `fallback.js` (AI) · `connection.js`, `messageHandler.js` (WhatsApp)
-  `index.js` + `general.js`, `ai.js`, `sticker.js`, `music.js`, `profile.js` (commands)
-  `personality.js`, `memory.js`, `divine.js`, `menu.js`
-- `data/` — memory and settings (private) · `auth/` — WhatsApp session (private)
+## Personality
+`PERSONALITY=maki` (default: blunt, nonchalant) or `PERSONALITY=calm` (the original).
 
-## Test status
-Run `npm test` for offline tests (fallback logic, memory, Divine, menu, dedupe, key scrubbing).
-Everything else needs real credentials/devices and must be tested by you:
-.ping .about .status .owner .ai .clear .menu .help (WhatsApp login) · .s .toimg .take (needs sharp + ffmpeg
-to install correctly; animated conversion is best-effort) · .play (iTunes API: preview + links, no full songs) ·
-.getpp (works only if the person's privacy settings allow it).
+## Optional extras (more disk needed)
+Video stickers and animated .toimg need `wa-sticker-formatter` and `ffmpeg-static`
+(in the panel's "Additional Node packages" box, or `npm install` them). Without them Lumi
+still makes image stickers (no pack name/author) and says clearly what she can't do.
+For Render-style hosts with no disk, also install `pg` and set DATABASE_URL.
+
+## Tests
+`npm test` runs offline tests (fallback chain, memory, Divine, claim, prefix, AFK, kick, menu).
+Everything that needs real WhatsApp, API keys or media must be tested on your server.
