@@ -26,12 +26,13 @@ Once she has seen the owner in a group she also learns the hidden id automatical
 ## Commands
 General: menu help ping about status owner · AI: chatbot on/off (ai on/off works too), clear, protect on/off (owner)
 Sticker: s take toimg · Media: play · Profile: getpp @user · Group (admins): add <number>, kick @user
-Utility: afk [reason] · Owner: setprefix <symbol|reset>, setprofilepic (reply to an image)
+Utility: afk [reason] · Owner: addsubowner/delsubowner, setprefix <symbol|reset>, setprofilepic (reply to an image),
+  d <time> (reply to a message: deletes it after e.g. 5s / 2m / 1h), sleep / wake (or "lumi sleep" / "lumi wake up")
 Hidden: claim, unclaim
 
-## Layout
-All code files sit together in one folder (flat layout, Node 20+). `index.js` is the command registry;
-commands live in `general.js ai.js sticker.js music.js profile.js group.js afk.js owner.js`.
+## Notes
+- Reasoning models (e.g. GROQ_MODEL=openai/gpt-oss-20b) can leak their thinking; Lumi strips it, but `llama-3.3-70b-versatile` is the safe choice.
+- If you forget a custom prefix: `.setprefix reset`, `.claim` and `.wake` always answer to the default `.`
 
 ## Personality
 `PERSONALITY=maki` (default: blunt, nonchalant) or `PERSONALITY=calm` (the original).
